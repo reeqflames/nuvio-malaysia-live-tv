@@ -16,20 +16,23 @@ function extract(html,base){
   return [...urls];
 }
 function mediaOnly(urls){return [...new Set(urls.filter(u=>/\.m3u8(?:[?#]|$)|\.mpd(?:[?#]|$)|akamaized|fastly|cloudfront|dailymotion|stream|player|embed/i.test(u)))].slice(0,60)}
+function hints(text){return text.split(/\r?\n/).map(x=>x.trim()).filter(x=>/(stream-proxy|player-init|bootstrap|wp-json|admin-ajax|endpoint|provider|channel|signed|nonce|data-|m3u8|videojs|video\.js|fetch\s*\()/i.test(x)).filter(x=>!/[?&](?:token|auth_key|signature|sig|key|license)=/i.test(x)).slice(0,80)}
 async function inspectPage(id,page){
   const out={id,page};
   try{
     const p=await get(page);out.status=p.status;out.finalUrl=p.url;
     const urls=extract(p.text,p.url);
+    out.pageHints=hints(p.text);
     out.media=mediaOnly(urls);
     out.iframes=[...p.text.matchAll(/<iframe[^>]+src=["']([^"']+)["']/gi)].map(m=>abs(p.url,m[1])).filter(safe).slice(0,20);
-    const scripts=urls.filter(u=>/\.js(?:[?#]|$)/i.test(u)).slice(0,16);
+    const scripts=urls.filter(u=>/\.js(?:[?#]|$)/i.test(u));
+    const priority=[...new Set([...scripts.filter(u=>/stream-proxy|player-init/i.test(u)),...scripts])].slice(0,20);
     out.scripts=[];
-    for(const s of scripts){
-      try{const j=await get(s,p.url);const m=mediaOnly(extract(j.text,j.url));if(m.length)out.scripts.push({url:s,status:j.status,media:m})}catch(e){}
+    for(const s of priority){
+      try{const j=await get(s,p.url);const m=mediaOnly(extract(j.text,j.url));const h=hints(j.text);if(m.length||h.length)out.scripts.push({url:s,status:j.status,hints:h,media:m})}catch(e){}
     }
     for(const iframe of out.iframes.slice(0,8)){
-      try{const f=await get(iframe,p.url);const m=mediaOnly(extract(f.text,f.url));if(m.length)out.scripts.push({url:iframe,status:f.status,media:m})}catch(e){}
+      try{const f=await get(iframe,p.url);const m=mediaOnly(extract(f.text,f.url));const h=hints(f.text);if(m.length||h.length)out.scripts.push({url:iframe,status:f.status,hints:h,media:m})}catch(e){}
     }
   }catch(e){out.error=e.name+': '+e.message}
   return out;
