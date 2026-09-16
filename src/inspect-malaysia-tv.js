@@ -35,4 +35,5 @@ async function inspectPage(id,page){
   return out;
 }
 async function inspectMalaysiaTv(){const results=[];for(const [id,page] of Object.entries(PAGES))results.push(await inspectPage(id,page));return{at:new Date().toISOString(),results}}
+inspectMalaysiaTv().then(x=>console.log('MALAYSIA_TV_INSPECT '+JSON.stringify(x))).catch(e=>console.log('MALAYSIA_TV_INSPECT_ERROR '+e.message));
 module.exports={inspectMalaysiaTv};
