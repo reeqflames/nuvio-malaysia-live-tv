@@ -1,4 +1,5 @@
 const BOOTSTRAP='https://malaysia-tv.net/wp-json/media-hub/v1/bootstrap';
+const ORIGIN='https://malaysia-tv.net';
 const UA='Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36';
 const cache=new Map();
 
@@ -33,7 +34,7 @@ async function resolveMediaPrima(channel,page){
   const payload={p:'tonton',c:channel,q:'main',e:'1800s'};
   const v=enc3(payload);
   const res=await fetch(`${BOOTSTRAP}?v=${encodeURIComponent(v)}`,{
-    headers:{'user-agent':UA,'accept':'application/json,text/plain,*/*','referer':page},
+    headers:{'user-agent':UA,'accept':'application/json,text/plain,*/*','referer':page,'origin':ORIGIN},
     redirect:'follow',signal:AbortSignal.timeout(10000)
   });
   if(!res.ok)throw new Error(`bootstrap HTTP ${res.status}`);
@@ -41,7 +42,7 @@ async function resolveMediaPrima(channel,page){
   const u=new URL(data.url);
   if(!/^https:$/.test(u.protocol)||!u.pathname.includes('.m3u8'))throw new Error('bootstrap returned non-HLS URL');
   const expiresAt=Number(data.expires_at)||now+Math.min(Number(data.expires_in)||1800,1800);
-  const item={url:data.url,expiresAt,quality:data.quality||'main',headers:{Referer:page,'User-Agent':UA}};
+  const item={url:data.url,expiresAt,quality:data.quality||'main',headers:{Referer:page,Origin:ORIGIN,'User-Agent':UA}};
   cache.set(channel,item);
   return item;
 }
@@ -54,7 +55,7 @@ async function probeMediaPrima(items){
       const u=new URL(s.url);
       const r=await fetch(s.url,{headers:s.headers,redirect:'follow',signal:AbortSignal.timeout(9000)});
       const text=await r.text();
-      out.push({id:item.id,status:r.status,host:u.host,hls:text.includes('#EXTM3U'),expiresIn:Math.max(0,s.expiresAt-Math.floor(Date.now()/1000))});
+      out.push({id:item.id,status:r.status,host:u.host,hls:text.includes('#EXTM3U'),bodyHint:text.slice(0,60).replace(/\s+/g,' '),expiresIn:Math.max(0,s.expiresAt-Math.floor(Date.now()/1000))});
     }catch(e){out.push({id:item.id,error:e.name+': '+e.message});}
   }
   return out;
