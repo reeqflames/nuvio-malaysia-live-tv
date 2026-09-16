@@ -7,37 +7,19 @@ const PAGES={
 const BOOTSTRAP='https://malaysia-tv.net/wp-json/media-hub/v1/bootstrap';
 const UA='Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36';
 function timeout(ms=12000){return AbortSignal.timeout(ms)}
-function abs(base,u){try{return new URL(String(u).replace(/&amp;/g,'&'),base).toString()}catch{return null}}
-function safe(u){return u && !/[?&](?:token|auth_key|signature|sig|key|license)=/i.test(u)}
-async function req(url,{method='GET',referer,body,headers={}}={}){const r=await fetch(url,{method,headers:{'user-agent':UA,'accept':'application/json,text/html,*/*',...(referer?{referer}: {}),...headers},body,redirect:'follow',signal:timeout()});return{status:r.status,url:r.url,type:r.headers.get('content-type')||'',allow:r.headers.get('allow')||'',text:await r.text()}}
-async function get(url,referer){return req(url,{referer})}
-function extract(html,base){
-  const urls=new Set();
-  for(const m of html.matchAll(/(?:src|href|file|source|url)\s*[:=]\s*["']([^"']+)["']/gi)){const u=abs(base,m[1]);if(safe(u))urls.add(u)}
-  for(const m of html.matchAll(/https?:\\?\/\\?\/[^\s"'<>\\]+/gi)){const u=m[0].replace(/\\\//g,'/');if(safe(u))urls.add(u)}
-  return [...urls];
-}
-function mediaOnly(urls){return [...new Set(urls.filter(u=>/\.m3u8(?:[?#]|$)|\.mpd(?:[?#]|$)|akamaized|fastly|cloudfront|dailymotion|stream|player|embed/i.test(u)))].slice(0,60)}
-function hints(text){return text.split(/\r?\n/).map(x=>x.trim()).filter(x=>/(stream-proxy|player-init|bootstrap|wp-json|admin-ajax|endpoint|provider|channel|signed|nonce|data-|m3u8|videojs|video\.js|fetch\s*\()/i.test(x)).filter(x=>!/[?&](?:token|auth_key|signature|sig|key|license)=/i.test(x)).slice(0,80)}
-async function inspectPage(id,page){
-  const out={id,page};
-  try{
-    const p=await get(page);out.status=p.status;out.finalUrl=p.url;
-    const urls=extract(p.text,p.url);
-    out.pageHints=hints(p.text);
-    out.media=mediaOnly(urls);
-    out.iframes=[...p.text.matchAll(/<iframe[^>]+src=["']([^"']+)["']/gi)].map(m=>abs(p.url,m[1])).filter(safe).slice(0,20);
-    const scripts=urls.filter(u=>/\.js(?:[?#]|$)/i.test(u));
-    const priority=[...new Set([...scripts.filter(u=>/stream-proxy|player-init/i.test(u)),...scripts])].slice(0,20);
-    out.scripts=[];
-    for(const s of priority){
-      try{const j=await get(s,p.url);const m=mediaOnly(extract(j.text,j.url));const h=hints(j.text);if(m.length||h.length)out.scripts.push({url:s,status:j.status,hints:h,media:m})}catch(e){}
-    }
-  }catch(e){out.error=e.name+': '+e.message}
+async function req(url,{method='GET',referer}={}){const r=await fetch(url,{method,headers:{'user-agent':UA,'accept':'application/json,text/plain,text/html,*/*',...(referer?{referer}: {})},redirect:'follow',signal:timeout()});return{status:r.status,type:r.headers.get('content-type')||'',allow:r.headers.get('allow')||'',text:await r.text()}}
+function htmlDecode(s){return String(s).replace(/&quot;|&#34;/g,'"').replace(/&amp;|&#38;/g,'&').replace(/&#x2F;|&#47;/gi,'/').replace(/&lt;/g,'<').replace(/&gt;/g,'>')}
+function pageConfig(html){const m=html.match(/data-tv3p-config=["']([^"']+)["']/i);if(!m)return null;try{return JSON.parse(htmlDecode(m[1]))}catch{return null}}
+function cleanConfig(c){if(!c)return null;return{signedMode:!!c.useSignedMode,endpoint:c.signedEndpoint||null,provider:c.signedProvider||null,channel:c.signedChannel||null,quality:c.signedQuality||null,expirySeconds:c.signedExpirySeconds||null}}
+function looksB64(s){return typeof s==='string'&&s.length>20&&/^[A-Za-z0-9+/=\s]+$/.test(s)}
+function decodeBootstrap(text){let cur=String(text).trim();for(let i=0;i<5;i++){try{const j=JSON.parse(cur);if(j&&j.url){const u=new URL(j.url);return{ok:true,host:u.host,path:u.pathname,expiresAt:j.expires_at||null,expiresIn:j.expires_in||null,quality:j.quality||null}}}catch{}if(!looksB64(cur))break;try{cur=Buffer.from(cur,'base64').toString('utf8').trim()}catch{break}}return{ok:false,sample:cur.slice(0,120)}}
+async function inspectPage(id,page){try{const r=await req(page);return{id,page,status:r.status,config:cleanConfig(pageConfig(r.text))}}catch(e){return{id,page,error:e.name+': '+e.message}}}
+async function inspectRest(configs){const out={endpoint:BOOTSTRAP};try{const r=await req(BOOTSTRAP,{method:'OPTIONS',referer:PAGES.tv3});let body=null;try{body=JSON.parse(r.text)}catch{}out.options={status:r.status,allow:r.allow,methods:body?.methods||null,args:body?.endpoints?.[0]?.args||null}}catch(e){out.options={error:e.name+': '+e.message}}
+  out.probes=[];
+  for(const c of configs){const ch=c.config?.channel;if(!ch)continue;for(const mode of ['none','channel']){try{const u=mode==='channel'?`${BOOTSTRAP}?v=${encodeURIComponent(ch)}`:BOOTSTRAP;const r=await req(u,{referer:c.page});out.probes.push({pageId:c.id,channel:ch,mode,status:r.status,result:decodeBootstrap(r.text)})}catch(e){out.probes.push({pageId:c.id,channel:ch,mode,error:e.name+': '+e.message})}if(mode==='none'&&c.id!=='tv3')break;}
+  }
   return out;
 }
-function safeJson(text){try{const x=JSON.parse(text);if(x&&typeof x==='object'){if(x.url)x.url='[redacted-url]';if(x.src)x.src='[redacted-url]';if(x.stream)x.stream='[redacted-url]';}return x}catch{return text.slice(0,2000)}}
-async function inspectRest(){const out={endpoint:BOOTSTRAP};for(const method of ['OPTIONS','GET']){try{const r=await req(BOOTSTRAP,{method,referer:PAGES.tv3});out[method.toLowerCase()]={status:r.status,type:r.type,allow:r.allow,body:safeJson(r.text)}}catch(e){out[method.toLowerCase()]={error:e.name+': '+e.message}}}return out}
-async function inspectMalaysiaTv(){const results=[];for(const [id,page] of Object.entries(PAGES))results.push(await inspectPage(id,page));return{at:new Date().toISOString(),rest:await inspectRest(),results}}
-inspectMalaysiaTv().then(x=>console.log('MALAYSIA_TV_INSPECT '+JSON.stringify(x))).catch(e=>console.log('MALAYSIA_TV_INSPECT_ERROR '+e.message));
+async function inspectMalaysiaTv(){const configs=[];for(const [id,page] of Object.entries(PAGES))configs.push(await inspectPage(id,page));return{at:new Date().toISOString(),configs,rest:await inspectRest(configs)}}
+inspectMalaysiaTv().then(x=>console.log('MALAYSIA_TV_COMPACT '+JSON.stringify(x))).catch(e=>console.log('MALAYSIA_TV_COMPACT_ERROR '+e.message));
 module.exports={inspectMalaysiaTv};
