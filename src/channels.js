@@ -6,8 +6,7 @@ const RTM_PAGES={
   tv2:'https://rtmklik.rtm.gov.my/live/tv/tv2',
   okey:'https://rtmklik.rtm.gov.my/live/tv/okey',
   berita:'https://rtmklik.rtm.gov.my/live/tv/beritartm',
-  sukan:'https://rtmklik.rtm.gov.my/live/tv/sukanrtm',
-  tv6:'https://rtmklik.rtm.gov.my/live/tv/tv6'
+  sukan:'https://rtmklik.rtm.gov.my/live/tv/sukan'
 };
 const MP=(channel,page)=>({type:'malaysia-tv',channel,page});
 const channels = [
@@ -35,20 +34,10 @@ const channels = [
     {url:'https://d25tgymtnqzu8s.cloudfront.net/smil:berita/playlist.m3u8?id=5',quality:'HD',label:'Primary',headers:rtmHeaders(RTM_PAGES.berita)},
     {url:'https://d25tgymtnqzu8s.cloudfront.net/smil:berita/manifest.mpd',quality:'HD',label:'Backup',headers:rtmHeaders(RTM_PAGES.berita)}
   ]},
-  { rank:11,id:'tv-alhijrah',name:'TV AlHijrah',group:'General',provider:'TV AlHijrah',epg:'114',logo:'https://astrocontent.s3.amazonaws.com/Images/ChannelLogo/Pos/114_300.png',officialPage:'https://www.tvalhijrah.com/',sources:[
-    {url:'https://172048-castr.akamaized.net/61e0e9a88ecf869e0a595bfa/live_8b9f457013db11ed850317f9f49848aa/index.fmp4.m3u8',quality:'HD',label:'Primary'}
-  ]},
-  { rank:12,id:'tvs',name:'TVS',group:'General',provider:'TVS',epg:'122',officialPage:'https://www.tvsarawak.my/',sources:[
-    {url:'https://live-tvs.tvsarawak.my/live/tvs.m3u8',quality:'HD',label:'Primary'}
-  ]},
-  { rank:13,id:'sukan-plus',name:'Sukan+',group:'Sports',provider:'RTM',epg:'806',officialPage:RTM_PAGES.sukan,sources:[
+  { rank:11,id:'sukan-plus',name:'Sukan+',group:'Sports',provider:'RTM',epg:'806',officialPage:RTM_PAGES.sukan,sources:[
     {url:'https://d25tgymtnqzu8s.cloudfront.net/smil:sukan/playlist.m3u8?id=4',quality:'HD',label:'Primary',headers:rtmHeaders(RTM_PAGES.sukan)},
     {url:'https://d25tgymtnqzu8s.cloudfront.net/smil:sukan/manifest.mpd',quality:'1080p',label:'Backup',headers:rtmHeaders(RTM_PAGES.sukan)}
   ]},
-  { rank:14,id:'didik-tv',name:'DidikTV KPM',group:'Kids',provider:'Media Prima',epg:'147',logo:'https://astrocontent.s3.amazonaws.com/Images/ChannelLogo/Pos/147_300.png',officialPage:'https://didik.tv/',resolver:MP('didik','https://malaysia-tv.net/didik-tv-live/') },
-  { rank:15,id:'tv6',name:'TV6',group:'General',provider:'RTM',epg:'106',officialPage:RTM_PAGES.tv6,sources:[
-    {url:'https://d25tgymtnqzu8s.cloudfront.net/smil:tv6/playlist.m3u8?id=6',quality:'HD',label:'Primary',headers:rtmHeaders(RTM_PAGES.tv6)},
-    {url:'https://d25tgymtnqzu8s.cloudfront.net/smil:tv6/manifest.mpd',quality:'HD',label:'Backup',headers:rtmHeaders(RTM_PAGES.tv6)}
-  ]}
+  { rank:12,id:'didik-tv',name:'DidikTV KPM',group:'Kids',provider:'Media Prima',epg:'147',logo:'https://astrocontent.s3.amazonaws.com/Images/ChannelLogo/Pos/147_300.png',officialPage:'https://didik.tv/',resolver:MP('didik','https://malaysia-tv.net/didik-tv-live/') }
 ].map(c=>({...c,source:(c.sources||[])[0]})).sort((a,b)=>a.rank-b.rank);
 module.exports=channels;
