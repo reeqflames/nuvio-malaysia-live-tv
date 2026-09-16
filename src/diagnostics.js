@@ -1,4 +1,16 @@
 const channels=require('./channels');
+const alternates=[
+  {id:'tv3-proxy',url:'https://radiomy-tonton-proxy.api-danidev.workers.dev/tonton/live/6420323'},
+  {id:'8tv-proxy',url:'https://radiomy-tonton-proxy.api-danidev.workers.dev/tonton/live/6420325'},
+  {id:'tv9-proxy',url:'https://radiomy-tonton-proxy.api-danidev.workers.dev/tonton/live/6420326'},
+  {id:'didik-proxy',url:'https://radiomy-tonton-proxy.api-danidev.workers.dev/tonton/live/6420324'},
+  {id:'tvs-proxy',url:'https://api.dani-dev.co.za/v1/stream/mytv/live/tvs'},
+  {id:'rtm-tv1-glue',url:'https://d25tgymtnqzu8s.cloudfront.net/smil:tv1/playlist.m3u8?id=1',referer:'https://rtm-player.glueapi.io/'},
+  {id:'rtm-tv2-glue',url:'https://d25tgymtnqzu8s.cloudfront.net/smil:tv2/playlist.m3u8?id=2',referer:'https://rtm-player.glueapi.io/'},
+  {id:'rtm-okey-glue',url:'https://d25tgymtnqzu8s.cloudfront.net/smil:okey/playlist.m3u8?id=3',referer:'https://rtm-player.glueapi.io/'},
+  {id:'rtm-berita-glue',url:'https://d25tgymtnqzu8s.cloudfront.net/smil:berita/playlist.m3u8?id=5',referer:'https://rtm-player.glueapi.io/'},
+  {id:'rtm-tv6-glue',url:'https://d25tgymtnqzu8s.cloudfront.net/smil:tv6/playlist.m3u8?id=6',referer:'https://rtm-player.glueapi.io/'}
+];
 function timeout(ms=9000){return AbortSignal.timeout(ms)}
 function headersFor(ref){const h={'user-agent':'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/130 Mobile Safari/537.36','accept':'*/*'};if(ref)h.referer=ref;return h}
 function firstUri(text){return text.split(/\r?\n/).map(x=>x.trim()).find(x=>x&&!x.startsWith('#'))||null}
@@ -10,5 +22,5 @@ async function probeHls(info,referer){let text=info.text,base=info.url;for(let l
   const t=Date.now();const r=await fetch(next,{headers:{...headersFor(referer),range:'bytes=0-65535'},redirect:'follow',signal:timeout()});try{await r.arrayBuffer()}catch{}return{segmentStatus:r.status,segmentMs:Date.now()-t,segmentHost:new URL(r.url).host};
 }return{} }
 async function probeUrl(url,referer){const out={url};try{const a=await getText(url,referer);out.status=a.status;out.ms=a.ms;out.ctype=a.ctype;out.finalHost=new URL(a.url).host;const text=a.text||'';out.kind=text.includes('#EXTM3U')?'hls':(/<MPD[\s>]/i.test(text)?'dash':'other');out.encrypted=/ContentProtection|cenc:|pssh|widevine|clearkey/i.test(text);const res=[...text.matchAll(/RESOLUTION=(\d+x\d+)/gi)].map(x=>x[1]);if(res.length)out.resolutions=[...new Set(res)].slice(-6);if(out.kind==='hls'&&a.status<400)Object.assign(out,await probeHls(a,referer));return out}catch(e){out.error=e.name+': '+e.message;return out}}
-async function runDiagnostics(){const results=[];for(const c of channels){if(!c.source){results.push({id:c.id,status:'no-source'});continue}results.push({id:c.id,...await probeUrl(c.source.url,c.source.referer)})}return{at:new Date().toISOString(),results}}
+async function runDiagnostics(){const results=[];for(const c of channels){if(!c.source){results.push({id:c.id,status:'no-source'});continue}results.push({id:c.id,...await probeUrl(c.source.url,c.source.referer)})}const alt=[];for(const a of alternates)alt.push({id:a.id,...await probeUrl(a.url,a.referer)});return{at:new Date().toISOString(),results,alternates:alt}}
 module.exports={runDiagnostics,probeUrl};
