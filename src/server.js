@@ -1,6 +1,7 @@
 const http=require('node:http');
 const channels=require('./channels');
 const {runDiagnostics}=require('./diagnostics');
+const {inspectMalaysiaTv}=require('./inspect-malaysia-tv');
 const PORT=Number(process.env.PORT||3000);
 const PUBLIC_BASE=process.env.PUBLIC_URL||'https://nuvio-malaysia-live-tv.onrender.com';
 
@@ -123,6 +124,7 @@ const server=http.createServer(async(req,res)=>{
   if(p==='/')return home(res);
   if(p==='/health')return json(res,200,{ok:true,version:manifest.version,channels:channels.length,playable:channels.filter(configured).length,pending:channels.filter(c=>!configured(c)).map(c=>c.name)},0);
   if(p==='/diag')return json(res,200,await runDiagnostics(),0);
+  if(p==='/inspect-malaysia-tv')return json(res,200,await inspectMalaysiaTv(),0);
   if(p==='/manifest.json')return json(res,200,manifest,0);
   let m=p.match(/^\/logo\/([^/]+)\.svg$/);if(m)return svg(res,decodeURIComponent(m[1]));
   m=p.match(/^\/card\/([^/]+)\.svg$/);if(m)return cardSvg(res,decodeURIComponent(m[1]));
