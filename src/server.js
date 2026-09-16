@@ -1,13 +1,13 @@
 const http=require('node:http');
 const channels=require('./channels');
 const {runDiagnostics}=require('./diagnostics');
-const {inspectMalaysiaTv}=require('./inspect-malaysia-tv');
+const {resolveMediaPrima,probeMediaPrima}=require('./media-prima');
 const PORT=Number(process.env.PORT||3000);
 const PUBLIC_BASE=process.env.PUBLIC_URL||'https://nuvio-malaysia-live-tv.onrender.com';
 
 const manifest={
   id:'my.reeqflames.nuvio.malaysia.live',
-  version:'1.9.0',
+  version:'1.10.0',
   name:'Malaysia Live TV',
   description:'Malaysian live TV, tuned for simple home-screen playback.',
   resources:['catalog','meta','stream'],
@@ -18,7 +18,7 @@ const manifest={
 };
 
 function allSources(c){return c.sources&&c.sources.length?c.sources:(c.source?[c.source]:[])}
-function configured(c){return allSources(c).length>0}
+function configured(c){return !!c.resolver||allSources(c).length>0}
 const logo=c=>c.logo||`${PUBLIC_BASE}/logo/${encodeURIComponent(c.id)}.svg`;
 const card=c=>`${PUBLIC_BASE}/card/${encodeURIComponent(c.id)}.svg`;
 
@@ -92,7 +92,16 @@ function oneStream(c,s){
   return o;
 }
 
-function primaryStream(c){
+async function primaryStream(c){
+  if(c.resolver?.type==='malaysia-tv'){
+    try{
+      const s=await resolveMediaPrima(c.resolver.channel,c.resolver.page);
+      return [oneStream(c,{url:s.url,quality:'HD',headers:s.headers})];
+    }catch(e){
+      console.log(`MEDIA_PRIMA_RESOLVE_ERROR ${c.id} ${e.name}: ${e.message}`);
+      return [];
+    }
+  }
   const list=allSources(c);
   return list.length?[oneStream(c,list[0])]:[];
 }
@@ -124,7 +133,6 @@ const server=http.createServer(async(req,res)=>{
   if(p==='/')return home(res);
   if(p==='/health')return json(res,200,{ok:true,version:manifest.version,channels:channels.length,playable:channels.filter(configured).length,pending:channels.filter(c=>!configured(c)).map(c=>c.name)},0);
   if(p==='/diag')return json(res,200,await runDiagnostics(),0);
-  if(p==='/inspect-malaysia-tv')return json(res,200,await inspectMalaysiaTv(),0);
   if(p==='/manifest.json')return json(res,200,manifest,0);
   let m=p.match(/^\/logo\/([^/]+)\.svg$/);if(m)return svg(res,decodeURIComponent(m[1]));
   m=p.match(/^\/card\/([^/]+)\.svg$/);if(m)return cardSvg(res,decodeURIComponent(m[1]));
@@ -133,11 +141,13 @@ const server=http.createServer(async(req,res)=>{
   m=p.match(/^\/meta\/tv\/mytv:([^/]+)\.json$/);
   if(m){const c=channels.find(x=>x.id===decodeURIComponent(m[1]));return c?json(res,200,{meta:meta(c)},10):json(res,404,{error:'not found'},0);}
   m=p.match(/^\/stream\/tv\/mytv:([^/]+)\.json$/);
-  if(m){const c=channels.find(x=>x.id===decodeURIComponent(m[1]));if(!c)return json(res,404,{error:'not found'},0);return json(res,200,{streams:primaryStream(c)},3);}
+  if(m){const c=channels.find(x=>x.id===decodeURIComponent(m[1]));if(!c)return json(res,404,{error:'not found'},0);const streams=await primaryStream(c);return json(res,200,{streams},3);}
   return json(res,404,{error:'not found',path:p},0);
 });
 
 server.listen(PORT,'0.0.0.0',()=>{
-  console.log(`Malaysia Live TV ${manifest.version} home-first`);
+  console.log(`Malaysia Live TV ${manifest.version} dynamic-media-prima`);
+  const mp=channels.filter(c=>c.resolver?.type==='malaysia-tv').map(c=>({id:c.id,channel:c.resolver.channel,page:c.resolver.page}));
+  probeMediaPrima(mp).then(d=>console.log('MEDIA_PRIMA_PROBE '+JSON.stringify(d))).catch(e=>console.log('MEDIA_PRIMA_PROBE_ERROR '+e.message));
   runDiagnostics().then(d=>console.log('STREAM_DIAG '+JSON.stringify(d))).catch(e=>console.log('STREAM_DIAG_ERROR '+e.message));
 });
