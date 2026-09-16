@@ -8,7 +8,7 @@ const PUBLIC_BASE=process.env.PUBLIC_URL||'https://nuvio-malaysia-live-tv.onrend
 
 const manifest={
   id:'my.reeqflames.nuvio.malaysia.live',
-  version:'1.11.0',
+  version:'1.11.1',
   name:'Malaysia Live TV',
   description:'Malaysian live TV, tuned for simple home-screen playback.',
   resources:['catalog','meta','stream'],
