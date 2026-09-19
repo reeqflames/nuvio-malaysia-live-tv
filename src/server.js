@@ -150,7 +150,7 @@ function home(res){
   res.end(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Malaysia Live TV</title><style>*{box-sizing:border-box}body{margin:0;background:#07090e;color:#f7f8fb;font:15px/1.45 Inter,system-ui,-apple-system,Segoe UI,sans-serif}main{max-width:1000px;margin:auto;padding:34px 18px 60px}.hero{padding:10px 2px 24px}.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#8c96a8;font-weight:700}.hero h1{font-size:34px;margin:7px 0 6px}.hero p{margin:0;color:#9ca6b8}.stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}.pill{padding:7px 10px;border:1px solid #202735;background:#10151d;border-radius:999px;color:#b9c2d0;font-size:12px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}.card{position:relative;overflow:hidden;background:#0f141c;border:1px solid #1d2632;border-radius:18px}.card>img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}.info{padding:11px 13px 13px;display:flex;flex-direction:column;gap:2px}.info small{color:#8f9aaa}.card span{position:absolute;right:12px;top:12px;background:#10151dcc;border:1px solid #2a3443;border-radius:999px;padding:5px 8px;font-size:10px;letter-spacing:.08em;font-weight:800;color:#6ee7a8}.card.off{opacity:.42}.card.off span{color:#7f8997}.manifest{margin-top:24px;padding:14px;border:1px solid #1d2632;background:#0d1219;border-radius:14px}.manifest small{display:block;color:#7f8997;margin-bottom:5px}.manifest code{font-size:12px;color:#b7f5cd;word-break:break-all}</style></head><body><main><section class="hero"><div class="eyebrow">Nuvio Addon</div><h1>Malaysia Live TV</h1><p>Landscape WebP channel cards with clean branding and no baked-in LIVE badge.</p><div class="stats"><div class="pill">${live.length} playable</div><div class="pill">${pending.length} pending</div><div class="pill">v${manifest.version}</div></div></section><section class="grid">${cards}</section><div class="manifest"><small>Manifest</small><code>${PUBLIC_BASE}/manifest.json</code></div></main></body></html>`);
 }
 
-const server=http.createServer(async(req,res)=>{
+const server=http.createServer((req,res)=>{ (async()=>{
   const u=new URL(req.url,PUBLIC_BASE);
   const p=normalizePath(u.pathname);
   res.on('finish',()=>console.log(`${req.method} ${u.pathname}${u.search||''} -> ${p} [${res.statusCode}]`));
@@ -186,6 +186,7 @@ const server=http.createServer(async(req,res)=>{
     return json(res,200,{results});
   }
   return json(res,404,{error:'not found',path:p},0);
+  })().catch(err=>{console.error('REQUEST_ERROR',err); if(!res.headersSent) json(res,500,{error:'internal error'},0); else res.end();});
 });
 
 
