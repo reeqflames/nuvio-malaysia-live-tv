@@ -34,10 +34,5 @@ const channels = [
     {url:'https://d25tgymtnqzu8s.cloudfront.net/smil:berita/playlist.m3u8?id=5',quality:'HD',label:'Primary',headers:rtmHeaders(RTM_PAGES.berita)},
     {url:'https://d25tgymtnqzu8s.cloudfront.net/smil:berita/manifest.mpd',quality:'HD',label:'Backup',headers:rtmHeaders(RTM_PAGES.berita)}
   ]},
-  { rank:11,id:'sukan-plus',name:'Sukan+',group:'Sports',provider:'RTM',epg:'806',officialPage:RTM_PAGES.sukan,sources:[
-    {url:'https://d25tgymtnqzu8s.cloudfront.net/smil:sukan/playlist.m3u8?id=4',quality:'HD',label:'Primary',headers:rtmHeaders(RTM_PAGES.sukan)},
-    {url:'https://d25tgymtnqzu8s.cloudfront.net/smil:sukan/manifest.mpd',quality:'1080p',label:'Backup',headers:rtmHeaders(RTM_PAGES.sukan)}
-  ]},
-  { rank:12,id:'didik-tv',name:'DidikTV KPM',group:'Kids',provider:'Media Prima',epg:'147',logo:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/DidikTV_KPM.png/1080px-DidikTV_KPM.png',officialPage:'https://didik.tv/',resolver:MP('didik','https://malaysia-tv.net/didik-tv-live/') }
 ].map(c=>({...c,source:(c.sources||[])[0]})).sort((a,b)=>a.rank-b.rank);
 module.exports=channels;
