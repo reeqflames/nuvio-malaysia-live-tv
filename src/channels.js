@@ -10,7 +10,7 @@ const RTM_PAGES={
 };
 const MP=(channel,page)=>({type:'malaysia-tv',channel,page});
 const channels = [
-  { rank:1,id:'tv3',name:'TV3',group:'General',provider:'Media Prima',epg:'103',logo:'https://astrocontent.s3.amazonaws.com/Images/ChannelLogo/Pos/103_600.png',officialPage:'https://www.tonton.com.my/',resolver:MP('tv3','https://malaysia-tv.net/tv3-live/') },
+  { rank:1,id:'tv3',name:'TV3',group:'General',provider:'Media Prima',epg:'103',logo:'https://upload.wikimedia.org/wikipedia/commons/0/0f/TV3_%28Malaysia%29.svg',officialPage:'https://www.tonton.com.my/',resolver:MP('tv3','https://malaysia-tv.net/tv3-live/') },
   { rank:2,id:'astro-ria',name:'Astro Ria',group:'General',provider:'Astro',epg:'104',logo:'https://astrocontent.s3.amazonaws.com/Images/ChannelLogo/Pos/104_600.png',officialPage:'https://www.astro.com.my/content/channels/Astro-Ria-193' },
   { rank:3,id:'tv1',name:'TV1',group:'General',provider:'RTM',epg:'101',logo:'https://astrocontent.s3.amazonaws.com/Images/ChannelLogo/Pos/101_600.png',officialPage:RTM_PAGES.tv1,sources:[
     {url:'https://d25tgymtnqzu8s.cloudfront.net/smil:tv1/playlist.m3u8?id=1',quality:'HD',label:'Primary',headers:rtmHeaders(RTM_PAGES.tv1)},
@@ -38,6 +38,6 @@ const channels = [
     {url:'https://d25tgymtnqzu8s.cloudfront.net/smil:sukan/playlist.m3u8?id=4',quality:'HD',label:'Primary',headers:rtmHeaders(RTM_PAGES.sukan)},
     {url:'https://d25tgymtnqzu8s.cloudfront.net/smil:sukan/manifest.mpd',quality:'1080p',label:'Backup',headers:rtmHeaders(RTM_PAGES.sukan)}
   ]},
-  { rank:12,id:'didik-tv',name:'DidikTV KPM',group:'Kids',provider:'Media Prima',epg:'147',logo:'https://astrocontent.s3.amazonaws.com/Images/ChannelLogo/Pos/147_600.png',officialPage:'https://didik.tv/',resolver:MP('didik','https://malaysia-tv.net/didik-tv-live/') }
+  { rank:12,id:'didik-tv',name:'DidikTV KPM',group:'Kids',provider:'Media Prima',epg:'147',logo:'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/DidikTV_KPM.png/1080px-DidikTV_KPM.png',officialPage:'https://didik.tv/',resolver:MP('didik','https://malaysia-tv.net/didik-tv-live/') }
 ].map(c=>({...c,source:(c.sources||[])[0]})).sort((a,b)=>a.rank-b.rank);
 module.exports=channels;
