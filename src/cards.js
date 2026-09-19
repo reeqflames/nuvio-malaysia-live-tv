@@ -28,7 +28,7 @@ function backgroundSvg(c){
   const [a,b,d]=theme(c);
   const provider=esc(c.provider||'Malaysia');
   const group=esc(c.group||'Live TV');
-  return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 960 540">
     <defs>
       <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#07101c"/><stop offset=".55" stop-color="#09111c"/><stop offset="1" stop-color="#03060b"/></linearGradient>
       <radialGradient id="g1" cx="78%" cy="18%" r="75%"><stop stop-color="${a}" stop-opacity=".55"/><stop offset="1" stop-color="${a}" stop-opacity="0"/></radialGradient>
@@ -91,7 +91,7 @@ async function renderChannelCard(c){
 
   const out=await sharp(backgroundSvg(c))
     .composite(overlays)
-    .webp({quality:84,effort:4})
+    .resize(1920,1080,{fit:'fill'}).webp({quality:92,effort:4})
     .toBuffer();
   cache.set(key,out);
   return out;
