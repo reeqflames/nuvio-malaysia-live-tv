@@ -25,7 +25,10 @@ function parseSchedule(data){
   for(const items of Object.values(sched))for(const x of (Array.isArray(items)?items:[])){
     const start=Date.parse(x.datetimeInUtc),stop=start+duration(x.duration);
     const title=x.title||x.programmeTitle||x.name;
-    if(Number.isFinite(start)&&stop>start&&title)out.push({start,stop,title,desc:x.synopsis||x.shortSynopsis||'',category:x.genre||'',channel:null});
+    if(Number.isFinite(start)&&stop>start&&title){
+      const image=x.image||x.imageUrl||x.imageURL||x.thumbnail||x.poster||x.landscapeImage||x.programmeImage||x.eventImage||null;
+      out.push({start,stop,title,desc:x.synopsis||x.shortSynopsis||'',category:x.genre||'',image,channel:null});
+    }
   }
   return out.sort((a,b)=>a.start-b.start);
 }
