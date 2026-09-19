@@ -23,10 +23,11 @@ function allSources(c){return c.sources&&c.sources.length?c.sources:(c.source?[c
 function configured(c){return !!c.resolver||allSources(c).length>0}
 const logo=c=>c.logo||`${PUBLIC_BASE}/logo/${encodeURIComponent(c.id)}.svg`;
 const staticCard=c=>`${PUBLIC_BASE}/card/${encodeURIComponent(c.id)}.webp?v=${manifest.version}`;
-const card=c=>staticCard(c);
-const programmeBackground=c=>{
+const card=c=>{
   const x=epg.schedule(c.id).current;
-  return (typeof x?.image==='string'&&/^https?:\/\//i.test(x.image))?x.image:staticCard(c);
+  if(typeof x?.image==='string'&&/^https?:\/\//i.test(x.image))return x.image;
+  const key=x?`&epg=${x.start}`:'';
+  return staticCard(c)+key;
 };
 
 function epgText(c){
@@ -43,7 +44,7 @@ function meta(c){return{
   name:c.name,
   poster:card(c),
   posterShape:'landscape',
-  background:programmeBackground(c),
+  background:card(c),
   description:epgText(c),
   genres:[c.group,'Malaysia','Live TV'],
   behaviorHints:{defaultVideoId:`mytv:${c.id}`}
