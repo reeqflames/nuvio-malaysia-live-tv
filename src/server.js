@@ -3,14 +3,15 @@ const channels=require('./channels');
 const {runDiagnostics}=require('./diagnostics');
 const {resolveMediaPrima,probeMediaPrima}=require('./media-prima');
 const {renderChannelCard}=require('./cards');
+const epg=require('./epg');
 const PORT=Number(process.env.PORT||3000);
 const PUBLIC_BASE=process.env.PUBLIC_URL||'https://nuvio-malaysia-live-tv.onrender.com';
 
 const manifest={
   id:'my.reeqflames.nuvio.malaysia.live',
-  version:'1.11.1',
+  version:'2.0.0',
   name:'Malaysia Live TV',
-  description:'Malaysian live TV, tuned for simple home-screen playback.',
+  description:'Malaysian live TV with live Now & Next EPG.',
   resources:['catalog','meta','stream'],
   types:['tv'],
   catalogs:[{type:'tv',id:'malaysia-live',name:'Live TV'}],
@@ -23,6 +24,14 @@ function configured(c){return !!c.resolver||allSources(c).length>0}
 const logo=c=>c.logo||`${PUBLIC_BASE}/logo/${encodeURIComponent(c.id)}.svg`;
 const card=c=>`${PUBLIC_BASE}/card/${encodeURIComponent(c.id)}.webp?v=${manifest.version}`;
 
+function epgText(c){
+  const {current,upcoming}=epg.schedule(c.id);
+  if(!current)return `${c.provider} • ${c.group} • Live`;
+  const fmt=t=>new Intl.DateTimeFormat('en-MY',{timeZone:'Asia/Kuala_Lumpur',hour:'numeric',minute:'2-digit'}).format(new Date(t));
+  const next=upcoming[0];
+  return `NOW • ${current.title} • ${fmt(current.start)}–${fmt(current.stop)}${next?`\nNEXT • ${next.title} • ${fmt(next.start)}`:''}`;
+}
+
 function meta(c){return{
   id:`mytv:${c.id}`,
   type:'tv',
@@ -30,7 +39,7 @@ function meta(c){return{
   poster:card(c),
   posterShape:'landscape',
   background:card(c),
-  description:`${c.provider} • ${c.group} • Live`,
+  description:epgText(c),
   genres:[c.group,'Malaysia','Live TV'],
   behaviorHints:{defaultVideoId:`mytv:${c.id}`}
 };}
@@ -97,7 +106,7 @@ async function cardWebp(res,id){
 function oneStream(c,s){
   const o={
     name:'Malaysia Live TV',
-    title:`${c.name} • Live`,
+    title:(()=>{const x=epg.schedule(c.id).current;return x?`${c.name} • NOW: ${x.title}`:`${c.name} • Live`})(),
     url:s.url,
     behaviorHints:{notWebReady:false,bingeGroup:`malaysia-live-${c.id}`}
   };
@@ -145,7 +154,10 @@ const server=http.createServer(async(req,res)=>{
   }
   if(req.method!=='GET'&&req.method!=='HEAD')return json(res,405,{error:'method not allowed'},0);
   if(p==='/')return home(res);
-  if(p==='/health')return json(res,200,{ok:true,version:manifest.version,channels:channels.length,playable:channels.filter(configured).length,pending:channels.filter(c=>!configured(c)).map(c=>c.name)},0);
+  if(p==='/health')return json(res,200,{ok:true,version:manifest.version,channels:channels.length,playable:channels.filter(configured).length,pending:channels.filter(c=>!configured(c)).map(c=>c.name),epg:epg.status()},0);
+  if(p==='/epg.json'){await epg.refresh();return json(res,200,epg.snapshot(),60);}
+  m=p.match(/^\/epg\/([^/]+)\.json$/);if(m){await epg.refresh();const id=decodeURIComponent(m[1]);const c=channels.find(x=>x.id===id);return c?json(res,200,{channel:c.name,...epg.schedule(id),updatedAt:epg.status().updatedAt},60):json(res,404,{error:'not found'},0);}
+  if(p==='/epg/refresh'){await epg.refresh(true);return json(res,200,epg.status(),0);}
   if(p==='/diag')return json(res,200,await runDiagnostics(),0);
   if(p==='/manifest.json')return json(res,200,manifest,0);
   let m=p.match(/^\/logo\/([^/]+)\.svg$/);if(m)return svg(res,decodeURIComponent(m[1]));
@@ -161,6 +173,7 @@ const server=http.createServer(async(req,res)=>{
 });
 
 server.listen(PORT,'0.0.0.0',()=>{
+  epg.refresh().then(()=>console.log('EPG_READY '+JSON.stringify(epg.status()))).catch(e=>console.log('EPG_ERROR '+e.message));
   console.log(`Malaysia Live TV ${manifest.version} branded-webp-cards`);
   const mp=channels.filter(c=>c.resolver?.type==='malaysia-tv').map(c=>({id:c.id,channel:c.resolver.channel,page:c.resolver.page}));
   probeMediaPrima(mp).then(d=>console.log('MEDIA_PRIMA_PROBE '+JSON.stringify(d))).catch(e=>console.log('MEDIA_PRIMA_PROBE_ERROR '+e.message));
