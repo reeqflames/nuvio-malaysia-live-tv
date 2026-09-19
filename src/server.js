@@ -22,7 +22,13 @@ const manifest={
 function allSources(c){return c.sources&&c.sources.length?c.sources:(c.source?[c.source]:[])}
 function configured(c){return !!c.resolver||allSources(c).length>0}
 const logo=c=>c.logo||`${PUBLIC_BASE}/logo/${encodeURIComponent(c.id)}.svg`;
-const card=c=>`${PUBLIC_BASE}/card/${encodeURIComponent(c.id)}.webp?v=${manifest.version}`;
+const staticCard=c=>`${PUBLIC_BASE}/card/${encodeURIComponent(c.id)}.webp?v=${manifest.version}`;
+const card=c=>{
+  const x=epg.schedule(c.id).current;
+  if(c.id==='tv3'&&x?.image)return x.image;
+  const key=c.id==='tv3'&&x?`&epg=${x.start}`:'';
+  return staticCard(c)+key;
+};
 
 function epgText(c){
   const {current,upcoming}=epg.schedule(c.id);
