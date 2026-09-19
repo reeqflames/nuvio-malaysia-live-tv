@@ -178,6 +178,18 @@ const server=http.createServer(async(req,res)=>{
   return json(res,404,{error:'not found',path:p},0);
 });
 
+
+// TEMP probe supplied candidate HLS URLs; remove after verification.
+if(reqPath==='/probe-candidates.json'){
+  const urls=["https://stream1.freetv.fun/94fb737967922381fad072d73b06515fbd2bb7c2d46e8458f16dbc0cfbd3f87c.m3u8","https://stream1.freetv.fun/582197447e32b2b186bb7b123625e1a24f66567003a8d99154fdad7a5808dff1.m3u8","https://stream1.freetv.fun/239865eb44f2ac54627025e83a852da8a3296a2aaa7820876e726e1e9ac6e901.m3u8","https://stream1.freetv.fun/3c9ed2cfd07b47b504e4c4e2083c7c0f01bb9bd8a645bb2c15f49fee84c1729c.m3u8","https://stream1.freetv.fun/3e0d3c58c379a71f9385c73ae2b2fdfd77bb8def82b80728d980632cfc82d15c.m3u8","https://stream1.freetv.fun/3a88f55139022e90fe1d9729ad32a8579543da9dcd490926ab9f6e2b40049a0a.m3u8","https://stream1.freetv.fun/559041fa1cd5a148d80750f412178611fbe15f77b72accf7fbba42cf0c1ae210.m3u8","https://stream1.freetv.fun/3d1106701b5447b6c0813bd535bcd2c708950cc54ddb9b7d6872fc48f9b45c7c.m3u8","https://stream1.freetv.fun/b08a9fd2ebd28f0e907ebfd39363bcf59efae565c1328baa25d8706e6912e972.m3u8"];
+  const results=await Promise.all(urls.map(async (url,index)=>{
+    const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),10000);
+    try{const r=await fetch(url,{headers:{'user-agent':'Mozilla/5.0','accept':'application/vnd.apple.mpegurl,*/*'},signal:ctl.signal});const body=await r.text();return{index:index+1,status:r.status,ok:r.ok,hls:/#EXTM3U/.test(body),contentType:r.headers.get('content-type'),finalUrl:r.url};}
+    catch(e){return{index:index+1,status:0,ok:false,hls:false,error:e.name+': '+e.message};}
+    finally{clearTimeout(t);}
+  }));
+  return json(res,200,{results});
+}
 server.listen(PORT,'0.0.0.0',()=>{
   epg.refresh().then(()=>console.log('EPG_READY '+JSON.stringify(epg.status()))).catch(e=>console.log('EPG_ERROR '+e.message));
   console.log(`Malaysia Live TV ${manifest.version} branded-webp-cards`);
