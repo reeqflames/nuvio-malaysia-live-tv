@@ -1,7 +1,7 @@
 const channels=require('./channels');
 
 const SOURCES=[
-  {name:'Astro',url:'https://iptv-org.github.io/epg/guides/my/astro.com.my.epg.xml'},
+  {name:'Astro',url:'https://iptv-org.github.io/epg/guides/ms/astro.com.my.xml'},
   {name:'RTM Klik',url:'https://iptv-org.github.io/epg/guides/ms/rtmklik.rtm.gov.my.xml'}
 ];
 const TTL=6*60*60*1000;
