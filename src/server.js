@@ -156,11 +156,11 @@ const server=http.createServer(async(req,res)=>{
   if(p==='/')return home(res);
   if(p==='/health')return json(res,200,{ok:true,version:manifest.version,channels:channels.length,playable:channels.filter(configured).length,pending:channels.filter(c=>!configured(c)).map(c=>c.name),epg:epg.status()},0);
   if(p==='/epg.json'){await epg.refresh();return json(res,200,epg.snapshot(),60);}
-  m=p.match(/^\/epg\/([^/]+)\.json$/);if(m){await epg.refresh();const id=decodeURIComponent(m[1]);const c=channels.find(x=>x.id===id);return c?json(res,200,{channel:c.name,...epg.schedule(id),updatedAt:epg.status().updatedAt},60):json(res,404,{error:'not found'},0);}
+  let m=p.match(/^\/epg\/([^/]+)\.json$/);if(m){await epg.refresh();const id=decodeURIComponent(m[1]);const c=channels.find(x=>x.id===id);return c?json(res,200,{channel:c.name,...epg.schedule(id),updatedAt:epg.status().updatedAt},60):json(res,404,{error:'not found'},0);}
   if(p==='/epg/refresh'){await epg.refresh(true);return json(res,200,epg.status(),0);}
   if(p==='/diag')return json(res,200,await runDiagnostics(),0);
   if(p==='/manifest.json')return json(res,200,manifest,0);
-  let m=p.match(/^\/logo\/([^/]+)\.svg$/);if(m)return svg(res,decodeURIComponent(m[1]));
+  m=p.match(/^\/logo\/([^/]+)\.svg$/);if(m)return svg(res,decodeURIComponent(m[1]));
   m=p.match(/^\/card\/([^/]+)\.webp$/);if(m)return cardWebp(res,decodeURIComponent(m[1]));
   m=p.match(/^\/card\/([^/]+)\.svg$/);if(m)return cardSvg(res,decodeURIComponent(m[1]));
   m=p.match(/^\/catalog\/tv\/([^/]+?)(?:\/[^/]+)?\.json$/);
