@@ -25,8 +25,8 @@ const logo=c=>c.logo||`${PUBLIC_BASE}/logo/${encodeURIComponent(c.id)}.svg`;
 const staticCard=c=>`${PUBLIC_BASE}/card/${encodeURIComponent(c.id)}.webp?v=${manifest.version}`;
 const card=c=>{
   const x=epg.schedule(c.id).current;
-  if(c.id==='tv3'&&x?.image)return x.image;
-  const key=c.id==='tv3'&&x?`&epg=${x.start}`:'';
+  if(x?.image)return x.image;
+  const key=x?`&epg=${x.start}`:'';
   return staticCard(c)+key;
 };
 
