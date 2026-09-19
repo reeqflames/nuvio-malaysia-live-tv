@@ -44,7 +44,7 @@ function meta(c){return{
   name:c.name,
   poster:card(c),
   posterShape:'landscape',
-  background:card(c),
+  background:logo(c),
   description:epgText(c),
   genres:[c.group,'Malaysia','Live TV'],
   behaviorHints:{defaultVideoId:`mytv:${c.id}`}
